@@ -137,7 +137,7 @@ namespace WebRtcVoice
                                 break;
                             case 459:
                                 // This is the error code for handle already destroyed
-                                m_log.DebugFormat("{0} DestroySession: Handle not found", LogHeader);
+                                if (_MessageDetails) m_log.DebugFormat("{0} DestroySession: Handle not found", LogHeader);
                                 break;
                             default:
                                 m_log.ErrorFormat("{0} DestroySession: failed {1}", LogHeader, eResp.errorReason);
@@ -422,7 +422,7 @@ namespace WebRtcVoice
                 }
                 catch (TaskCanceledException e)
                 {
-                    m_log.DebugFormat("{0} GetFromJanus: task canceled: {1}", LogHeader, e.Message);
+                    if (_MessageDetails) m_log.DebugFormat("{0} GetFromJanus: task canceled: {1}", LogHeader, e.Message);
                     var eResp = new ErrorResp("GETERROR");
                     eResp.SetError(499, "Task canceled");
                     ret = eResp;
@@ -606,7 +606,7 @@ namespace WebRtcVoice
                                                 break;
                                             case 499:
                                                 // "Task canceled" means the long poll was canceled
-                                                m_log.DebugFormat("{0} EventLongPoll: Task canceled. URI={1}", LogHeader, SessionUri);
+                                                if (_MessageDetails) m_log.DebugFormat("{0} EventLongPoll: Task canceled. URI={1}", LogHeader, SessionUri);
                                                 break;
                                             default:
                                                 m_log.DebugFormat("{0} EventLongPoll: unknown response. URI={1}: {2}",
@@ -635,7 +635,8 @@ namespace WebRtcVoice
                         m_log.ErrorFormat("{0} EventLongPoll: exception {1}", LogHeader, e);
                     }
                 }
-                m_log.InfoFormat("{0} EventLongPoll: Exiting long poll loop", LogHeader);
+                if (_MessageDetails)
+                    m_log.InfoFormat("{0} EventLongPoll: Exiting long poll loop", LogHeader);
             });
         }
     }

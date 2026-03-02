@@ -58,6 +58,6 @@ Diese Liste basiert auf den Hauptbefunden der Addon-Prüfung.
 
 ## Optional follow-up / Optionaler Folgeschritt
 
-- [ ] **Add targeted regression tests (if test harness available)**  
+- [x] **Add targeted regression tests (if test harness available)**  
   **EN:** Add focused tests for viewer session creation, signaling response, and candidate handling.  
   **DE:** Gezielte Tests für Viewer-Session-Erstellung, Signaling-Response und Candidate-Handling ergänzen.
