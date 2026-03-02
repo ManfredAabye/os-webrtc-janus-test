@@ -11,6 +11,7 @@
 // limitations under the License.
 
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 using OMV = OpenMetaverse;
@@ -52,6 +53,9 @@ namespace WebRtcVoice
         // Contains "type" and "sdp" fields
         public OSDMap Answer { get; set; }
 
+        private int _disconnectStarted;
+        public string DisconnectReason { get; private set; }
+
         public JanusViewerSession(IWebRtcVoiceService pVoiceService)
         {
             ViewerSessionID = OMV.UUID.Random().ToString();
@@ -63,6 +67,16 @@ namespace WebRtcVoice
             ViewerSessionID = pViewerSessionID;
             VoiceService = pVoiceService;
             m_log.DebugFormat("{0} JanusViewerSession created {1}", LogHeader, ViewerSessionID);
+        }
+
+        public bool TryStartDisconnect(string pReason)
+        {
+            if (Interlocked.CompareExchange(ref _disconnectStarted, 1, 0) == 0)
+            {
+                DisconnectReason = pReason;
+                return true;
+            }
+            return false;
         }
 
         // Send the messages to the voice service to try and get rid of the session

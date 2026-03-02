@@ -124,7 +124,7 @@ namespace WebRtcVoice
                 int errorCode = abResp.AudioBridgeErrorCode;
 
                 if (errorCode == 0 &&
-                    (abResp.isSuccess || returnCode == "event" || returnCode == "success"))
+                    (abResp.isSuccess || returnCode == "left" || returnCode == "event" || returnCode == "success"))
                 {
                     ret = true;
                 }

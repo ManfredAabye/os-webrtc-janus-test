@@ -146,11 +146,19 @@ namespace WebRtcVoice
             if (pResp is not null)
             {
                 var sessionId = pResp.sessionId;
-                _log.DebugFormat("{0} Handle_Hangup: {1}, sessionId={2}", LogHeader, pResp.RawBody.ToString(), sessionId);
+                string reason = pResp.RawBody.TryGetString("reason", out string r) ? r : String.Empty;
+                if (_MessageDetails)
+                {
+                    _log.DebugFormat("{0} Handle_Hangup: {1}, sessionId={2}", LogHeader, pResp.RawBody.ToString(), sessionId);
+                }
+                else
+                {
+                    _log.DebugFormat("{0} Handle_Hangup: sessionId={1}, reason={2}", LogHeader, sessionId, reason);
+                }
                 if (VoiceViewerSession.TryGetViewerSessionByVSSessionId(sessionId, out IVoiceViewerSession viewerSession))
                 {
                     // There is a viewer session associated with this session
-                    DisconnectViewerSession(viewerSession as JanusViewerSession);
+                    DisconnectViewerSession(viewerSession as JanusViewerSession, "hangup");
                 }
                 else
                 {
@@ -160,13 +168,20 @@ namespace WebRtcVoice
         }
 
         // Disconnect the viewer session. This is called when the viewer logs out or hangs up.
-        private void DisconnectViewerSession(JanusViewerSession pViewerSession)
+        private void DisconnectViewerSession(JanusViewerSession pViewerSession, string pReason)
         {
             if (pViewerSession is not null)
             {
+                if (!pViewerSession.TryStartDisconnect(pReason))
+                {
+                    _log.DebugFormat("{0} DisconnectViewerSession: duplicate disconnect suppressed. viewer_session={1}, reason={2}, firstReason={3}",
+                            LogHeader, pViewerSession.ViewerSessionID, pReason, pViewerSession.DisconnectReason);
+                    return;
+                }
+
                 int roomId = pViewerSession.Room is not null ? pViewerSession.Room.RoomId : 0;
-                _log.InfoFormat("{0} ProvisionVoiceAccountRequest: disconnected. agent={1}, scene={2}, room={3}, participant={4}, viewer_session={5}",
-                        LogHeader, pViewerSession.AgentId, pViewerSession.RegionId, roomId, pViewerSession.ParticipantId, pViewerSession.ViewerSessionID);
+                _log.InfoFormat("{0} ProvisionVoiceAccountRequest: disconnected by {1}. agent={2}, scene={3}, room={4}, participant={5}, viewer_session={6}",
+                        LogHeader, pReason, pViewerSession.AgentId, pViewerSession.RegionId, roomId, pViewerSession.ParticipantId, pViewerSession.ViewerSessionID);
                 Task.Run(() =>
                 {
                     VoiceViewerSession.RemoveViewerSession(pViewerSession.ViewerSessionID);
@@ -197,15 +212,8 @@ namespace WebRtcVoice
                 bool isLogout = pRequest.ContainsKey("logout") && pRequest["logout"].AsBoolean();
                 if (isLogout)
                 {
-                    // The client is logging out. Exit the room.
-                    int roomId = viewerSession.Room is not null ? viewerSession.Room.RoomId : 0;
-                    _log.InfoFormat("{0} ProvisionVoiceAccountRequest: disconnected by logout. agent={1}, scene={2}, room={3}, participant={4}, viewer_session={5}",
-                            LogHeader, viewerSession.AgentId, viewerSession.RegionId, roomId, viewerSession.ParticipantId, viewerSession.ViewerSessionID);
-                    if (viewerSession.Room is not null)
-                    {
-                        await viewerSession.Room.LeaveRoom(viewerSession);
-                        viewerSession.Room = null;
-                    }
+                    // The client is logging out. Disconnect the entire Janus viewer session.
+                    DisconnectViewerSession(viewerSession, "logout");
                     return new OSDMap
                     {
                         { "response", "closed" }
