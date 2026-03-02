@@ -121,17 +121,23 @@ namespace WebRtcVoice
 
                 AudioBridgeResp abResp = new AudioBridgeResp(resp);
                 string returnCode = abResp.AudioBridgeReturnCode;
+                string janusReturnCode = resp.ReturnCode;
                 int errorCode = abResp.AudioBridgeErrorCode;
 
                 if (errorCode == 0 &&
-                    (abResp.isSuccess || returnCode == "left" || returnCode == "event" || returnCode == "success"))
+                    (abResp.isSuccess || returnCode == "left" || returnCode == "event" || returnCode == "success" || janusReturnCode == "ack"))
                 {
                     ret = true;
+                    if (janusReturnCode == "ack" && String.IsNullOrEmpty(returnCode))
+                    {
+                        m_log.DebugFormat("{0} LeaveRoom. Ack accepted for room {1}, participant={2}",
+                                LogHeader, RoomId, pAttendeeSession.ParticipantId);
+                    }
                 }
                 else
                 {
                     m_log.ErrorFormat("{0} LeaveRoom. Failed room {1}, participant={2}, janus={3}, audiobridge={4}, errorCode={5}",
-                            LogHeader, RoomId, pAttendeeSession.ParticipantId, resp.ReturnCode, returnCode, errorCode);
+                            LogHeader, RoomId, pAttendeeSession.ParticipantId, janusReturnCode, returnCode, errorCode);
                 }
             }
             catch (Exception e)
